@@ -47,7 +47,7 @@
 
       for (var j = 0; j < org_packages.length; j++) {
         counter++;
-        packages.insertAdjacentHTML('beforeend', "<li>" + ourData.result.packages[j].title + " </li>");
+        packages.insertAdjacentHTML('beforeend', "<li>" + org_packages[j].title + " </li>");
         if (counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
           var dataset_remaining = org_packages.length - max_datasets_per_org;
           var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
