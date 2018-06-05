@@ -1,0 +1,66 @@
+<html>
+
+<head>
+</head>
+<title>New Datasets</title>
+<meta charset="utf-8">
+
+<div id="organization">
+  <ul id="dataset-title">
+  </ul>
+</div>
+
+<script>
+
+  var org = document.getElementById("organization");
+  var title = document.getElementById("dataset-title");
+  var max_datasets_per_org = 5;
+
+  var ourRequest = new XMLHttpRequest();
+  ourRequest.open('GET', 'https://catalogue.data.wa.gov.au/api/3/action/group_show?id=new-datasets&include_datasets=true');
+
+
+  ourRequest.onload = function () {
+    var ourData = JSON.parse(ourRequest.responseText);
+    var arr = [];
+
+    for (var i = 0; i < ourData.result.package_count; i++) {
+      arr.push(ourData.result.packages[i].organization.title);
+    }
+
+    //remove duplicates from array
+    let x = (arr) => arr.filter((v, i) => arr.indexOf(v) === i)
+    var unique = x(arr);
+
+    //only first 5 results for package ...
+    //display how more datasets after 5
+    for (var i = 0; i < unique.length; i++) {
+      var org_title = unique[i];
+
+      title.insertAdjacentHTML('beforeend', "<li>" + org_title + "<ul id='" + org_title + "'></ul></li>");
+
+      var packages = document.getElementById(unique[i]);
+
+      var counter = 0;
+
+      var org_packages = ourData.result.packages.filter((v, i) => org_title == v.organization.title);
+      console.log(org_packages);
+
+      for (var j = 0; j < org_packages.length; j++) {
+        counter++;
+        packages.insertAdjacentHTML('beforeend', "<li>" + ourData.result.packages[j].title + " </li>");
+        if (counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
+          var dataset_remaining = org_packages.length - max_datasets_per_org;
+          var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
+          packages.insertAdjacentHTML('beforeend', "<li> and " + (dataset_remaining) + " more " + dataset_term + ". </li>");
+          break;
+        }
+      }
+    }
+  };
+
+  ourRequest.send();
+
+</script>
+
+</html>
