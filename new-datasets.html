@@ -4,63 +4,68 @@
 </head>
 <title>New Datasets</title>
 <meta charset="utf-8">
-<div class="divTableCell top">
+<div class="divTableCell top" id="organisations">
   <h1>Latest datasets</h1>
-    <div id="organisations">
-    </div>
 </div>
 
 <script>
 
-  var org = document.getElementById("organisations");
+  var organisations = document.getElementById("organisations");
   //Controls the number of datasets shown per organisation before we display the 'And x more datasets' message.
   var max_datasets_per_org = 5;
-
-  var ourRequest = new XMLHttpRequest();
-  ourRequest.open('GET', 'https://catalogue.data.wa.gov.au/api/3/action/group_show?id=new-datasets&include_datasets=true', true);
-
-  ourRequest.onerror = function() {
-	org.insertAdjacentHTML('beforeend', "Sorry, we're having trouble reaching the data catalogue at the moment. Please check back later.");
+  var ckan_base_url = "https://catalogue.data.wa.gov.au";
+  
+  var latestsDatasetsRequest = new XMLHttpRequest();
+  latestsDatasetsRequest.open('GET', ckan_base_url+'/api/3/action/group_show?id=new-datasets&include_datasets=true');
+  
+  latestsDatasetsRequest.onerror = function() {
+	organisations.insertAdjacentHTML('beforeend', "Sorry, we're having trouble reaching the data catalogue at the moment. Please check back later.");
   }
 
-  ourRequest.onload = function () {
-    var ourData = JSON.parse(ourRequest.responseText);
-    var arr = [];
+  latestsDatasetsRequest.onload = function () {
+    var ourData = JSON.parse(latestsDatasetsRequest.responseText);
+    var latestsDatasets = [];
 
-    if (ourData.result.package_count == 0) {
-	  org.insertAdjacentHTML('beforeend', "There aren't any new datasets at the moment.");
-    }else{
-	  for (var i = 0; i < ourData.result.package_count; i++) {
-		arr.push(ourData.result.packages[i].organization.title);
-	  }
-	}
+  if (ourData.result.package_count == 0) {
+    organisations.insertAdjacentHTML('beforeend', "There aren't any new datasets at the moment.");
+  }else{
+    for (var i = 0; i < ourData.result.package_count; i++) {
+      latestsDatasets.push(ourData.result.packages[i].organization.title);
+    }
 
-    //remove duplicates from array
-    let x = (arr) => arr.filter((v, i) => arr.indexOf(v) === i)
-    var unique = x(arr);
+    function onlyUnique(value, index, self) { 
+      return self.indexOf(value) === index;
+    }
 
-    for (var i = 0; i < unique.length; i++) {
-      var org_title = unique[i];
-      org.insertAdjacentHTML('beforeend', "<h2>" + org_title + "</h2><ul id='" + org_title + "'></ul>");
-      var packages = document.getElementById(unique[i]);
+    var organisationDatasets = latestsDatasets.filter(onlyUnique);
+
+    for (var i = 0; i < organisationDatasets.length; i++) {
+      var org_title = organisationDatasets[i];
+      organisations.insertAdjacentHTML('beforeend', "<h2>" + org_title + "</h2><ul id='" + org_title + "'></ul>");
+      var packages = document.getElementById(organisationDatasets[i]);
       var counter = 0;
-      var org_packages = ourData.result.packages.filter((v, i) => org_title == v.organization.title);
-      var ckan_link = "https://catalogue.data.wa.gov.au/dataset/";
+      var org_packages = [];
+	  
+      for (var j = 0; j < ourData.result.packages.length; j++) {
+        if (ourData.result.packages[j].organization.title == org_title) 
+          org_packages.push(ourData.result.packages[j]);
+      }
       
-      for (var j = 0; j < org_packages.length; j++) {
+      for (var k = 0; k < org_packages.length; k++) {
         counter++;
-        packages.insertAdjacentHTML('beforeend', "<li><a href=" + ckan_link + org_packages[j].name +">"+ org_packages[j].title +"</a></li>");
+        packages.insertAdjacentHTML('beforeend', "<li><a href=" + ckan_base_url + "/dataset/" + org_packages[k].name +">"+ org_packages[k].title +"</a></li>");
         if (counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
           var dataset_remaining = org_packages.length - max_datasets_per_org;
           var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
           packages.insertAdjacentHTML('beforeend', "<li> and " + (dataset_remaining) + " more " + dataset_term + ". </li>");
           break;
+          }
         }
       }
     }
   };
 
-  ourRequest.send();
+  latestsDatasetsRequest.send();
 
 </script>
 
