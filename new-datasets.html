@@ -1,62 +1,71 @@
-<div class="divTableCell top" id="organisations">
+<div class="divTableCell top">
   <h1>Latest datasets</h1>
+
+  <div id="organisations"></div>
+
+  <button class="button bhome" onclick="window.location.href='https://catalogue.data.wa.gov.au/group/new-datasets'" onmouseover="this.style.backgroundColor ='#323232'"
+    onmouseout="this.style.backgroundColor ='#003b63'" style="background-color: #003b63;"> Discover more </button>
 </div>
 
 <script>
+  function populateLatestDatasets() {
+    var organisations = document.getElementById("organisations");
+    var ckan_base_url = "https://catalogue.data.wa.gov.au";
+    // Controls the number of datasets shown per organisation before we display the "And x more datasets" message.
+    var max_datasets_per_org = 5;
 
-function populateLatestDatasets() {
+    var latest_datasets_request = new XMLHttpRequest();
+    latest_datasets_request.open("GET", ckan_base_url + "/api/3/action/group_show?id=new-datasets&include_datasets=true");
 
-  var organisations = document.getElementById("organisations");
-  //Controls the number of datasets shown per organisation before we display the 'And x more datasets' message.
-  var max_datasets_per_org = 5;
-  var ckan_base_url = "https://catalogue.data.wa.gov.au";
-  
-  var latestsDatasetsRequest = new XMLHttpRequest();
-  latestsDatasetsRequest.open('GET', ckan_base_url+'/api/3/action/group_show?id=new-datasets&include_datasets=true');
-  
-  latestsDatasetsRequest.onerror = function() {
-	organisations.insertAdjacentHTML('beforeend', "Sorry, we're having trouble reaching the data catalogue at the moment. Please check back later.");
-  }
-
-  latestsDatasetsRequest.onload = function () {
-    var response = JSON.parse(latestsDatasetsRequest.responseText);
-    var organisationTitles = [];
-
-  if (response.result.package_count == 0) {
-    organisations.insertAdjacentHTML('beforeend', "There aren't any new datasets at the moment.");
-  } else {
-    for (var i = 0; i < response.result.package_count; i++) {
-      if (organisationTitles.indexOf(response.result.packages[i].organization.title) == -1) {
-        organisationTitles.push(response.result.packages[i].organization.title);
-      }
+    latest_datasets_request.onerror = function () {
+      organisations.insertAdjacentHTML("beforeend", "Sorry, we're having trouble reaching the data catalogue at the moment. Please check back later.");
     }
 
-    for (var i = 0; i < organisationTitles.length; i++) {
-      var org_title = organisationTitles[i];
-      organisations.insertAdjacentHTML('beforeend', "<h2>" + org_title + "</h2><ul id='" + org_title + "'></ul>");
-      var organisationDatasetsList = document.getElementById(organisationTitles[i]);
-      var counter = 0;
-	  
-      var org_packages = response.result.packages.filter(function(package) {
-        return package.organization.title == org_title;
-      });		  
-      
-      for (var k = 0; k < org_packages.length; k++) {
-        counter++;
-        organisationDatasetsList.insertAdjacentHTML('beforeend', "<li><a href='" + ckan_base_url + "/dataset/" + org_packages[k].name +"'>"+ org_packages[k].title +"</a></li>");
-        //displays first 5 datasets, if there are more display "and more..." message
-        if (counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
-          var dataset_remaining = org_packages.length - max_datasets_per_org;
-          var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
-          organisationDatasetsList.insertAdjacentHTML('beforeend', "<li> and " + (dataset_remaining) + " more " + dataset_term + ". </li>");
-          break;
+    latest_datasets_request.onload = function () {
+      var response = JSON.parse(latest_datasets_request.responseText);
+
+      if (response.result.package_count == 0) {
+        organisations.insertAdjacentHTML("beforeend", "There aren't any new datasets at the moment.");
+
+      } else {
+        var organisation_titles = [];
+        var organisation_names = [];
+        for (var i = 0; i < response.result.package_count; i++) {
+          if (organisation_titles.indexOf(response.result.packages[i].organization.title) == -1) {
+            organisation_titles.push(response.result.packages[i].organization.title);
+            organisation_names.push(response.result.packages[i].organization.name);
+          }
+        }
+
+        for (var i = 0; i < organisation_titles.length; i++) {
+          var org_title = organisation_titles[i];
+          organisations.insertAdjacentHTML("beforeend", "<h2><a href=\"" + ckan_base_url + "/organization/" + organisation_names[i] + "\">" + org_title + "</a></h2><ul id=\"" + org_title + "\"></ul>");
+          var organisation_datasets_list = document.getElementById(organisation_titles[i]);
+
+          var org_packages = response.result.packages.filter(function (package) {
+            return package.organization.title == org_title;
+          });
+
+          var org_dataset_counter = 0;
+          for (var k = 0; k < org_packages.length; k++) {
+            org_dataset_counter++;
+
+            organisation_datasets_list.insertAdjacentHTML("beforeend", "<li><a href=\"" + ckan_base_url + "/dataset/" + org_packages[k].name + "\">" + org_packages[k].title + "</a></li>");
+
+            // Displays first few datasets, if there are more display "and more..." message
+            if (org_dataset_counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
+              var dataset_remaining = org_packages.length - max_datasets_per_org;
+              var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
+              organisation_datasets_list.insertAdjacentHTML("beforeend", "<li>and " + (dataset_remaining) + " more " + dataset_term + "</li>");
+              break;
+            }
           }
         }
       }
     }
-  }
-  latestsDatasetsRequest.send();
-};
 
-populateLatestDatasets();
+    latest_datasets_request.send();
+  };
+
+  populateLatestDatasets();
 </script>
