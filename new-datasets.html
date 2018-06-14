@@ -1,14 +1,10 @@
-<html>
-
-<head>
-</head>
-<title>New Datasets</title>
-<meta charset="utf-8">
 <div class="divTableCell top" id="organisations">
   <h1>Latest datasets</h1>
 </div>
 
 <script>
+
+function populateLatestDatasets() {
 
   var organisations = document.getElementById("organisations");
   //Controls the number of datasets shown per organisation before we display the 'And x more datasets' message.
@@ -23,50 +19,44 @@
   }
 
   latestsDatasetsRequest.onload = function () {
-    var ourData = JSON.parse(latestsDatasetsRequest.responseText);
-    var latestsDatasets = [];
+    var response = JSON.parse(latestsDatasetsRequest.responseText);
+    var organisationTitles = [];
 
-  if (ourData.result.package_count == 0) {
+  if (response.result.package_count == 0) {
     organisations.insertAdjacentHTML('beforeend', "There aren't any new datasets at the moment.");
-  }else{
-    for (var i = 0; i < ourData.result.package_count; i++) {
-      latestsDatasets.push(ourData.result.packages[i].organization.title);
-    }
-
-    function onlyUnique(value, index, self) { 
-      return self.indexOf(value) === index;
-    }
-
-    var organisationDatasets = latestsDatasets.filter(onlyUnique);
-
-    for (var i = 0; i < organisationDatasets.length; i++) {
-      var org_title = organisationDatasets[i];
-      organisations.insertAdjacentHTML('beforeend', "<h2>" + org_title + "</h2><ul id='" + org_title + "'></ul>");
-      var packages = document.getElementById(organisationDatasets[i]);
-      var counter = 0;
-      var org_packages = [];
-	  
-      for (var j = 0; j < ourData.result.packages.length; j++) {
-        if (ourData.result.packages[j].organization.title == org_title) 
-          org_packages.push(ourData.result.packages[j]);
+  } else {
+    for (var i = 0; i < response.result.package_count; i++) {
+      if (organisationTitles.indexOf(response.result.packages[i].organization.title) == -1) {
+        organisationTitles.push(response.result.packages[i].organization.title);
       }
+    }
+
+    for (var i = 0; i < organisationTitles.length; i++) {
+      var org_title = organisationTitles[i];
+      organisations.insertAdjacentHTML('beforeend', "<h2>" + org_title + "</h2><ul id='" + org_title + "'></ul>");
+      var organisationDatasetsList = document.getElementById(organisationTitles[i]);
+      var counter = 0;
+	  
+      var org_packages = response.result.packages.filter(function(package) {
+        return package.organization.title == org_title;
+      });		  
       
       for (var k = 0; k < org_packages.length; k++) {
         counter++;
-        packages.insertAdjacentHTML('beforeend', "<li><a href=" + ckan_base_url + "/dataset/" + org_packages[k].name +">"+ org_packages[k].title +"</a></li>");
+        organisationDatasetsList.insertAdjacentHTML('beforeend', "<li><a href='" + ckan_base_url + "/dataset/" + org_packages[k].name +"'>"+ org_packages[k].title +"</a></li>");
+        //displays first 5 datasets, if there are more display "and more..." message
         if (counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
           var dataset_remaining = org_packages.length - max_datasets_per_org;
           var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
-          packages.insertAdjacentHTML('beforeend', "<li> and " + (dataset_remaining) + " more " + dataset_term + ". </li>");
+          organisationDatasetsList.insertAdjacentHTML('beforeend', "<li> and " + (dataset_remaining) + " more " + dataset_term + ". </li>");
           break;
           }
         }
       }
     }
-  };
-
+  }
   latestsDatasetsRequest.send();
+};
 
+populateLatestDatasets();
 </script>
-
-</html>
