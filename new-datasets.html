@@ -1,67 +1,71 @@
-<html>
-
-<head>
-</head>
-<title>New Datasets</title>
-<meta charset="utf-8">
 <div class="divTableCell top">
   <h1>Latest datasets</h1>
-    <div id="organisations">
-    </div>
+
+  <div id="organisations"></div>
+
+  <button class="button bhome" onclick="window.location.href='https://catalogue.data.wa.gov.au/group/new-datasets'" onmouseover="this.style.backgroundColor ='#323232'"
+    onmouseout="this.style.backgroundColor ='#003b63'" style="background-color: #003b63;"> Discover more </button>
 </div>
 
 <script>
+  function populateLatestDatasets() {
+    var organisations = document.getElementById("organisations");
+    var ckan_base_url = "https://catalogue.data.wa.gov.au";
+    // Controls the number of datasets shown per organisation before we display the "And x more datasets" message.
+    var max_datasets_per_org = 5;
 
-  var org = document.getElementById("organisations");
-  //Controls the number of datasets shown per organisation before we display the 'And x more datasets' message.
-  var max_datasets_per_org = 5;
+    var latest_datasets_request = new XMLHttpRequest();
+    latest_datasets_request.open("GET", ckan_base_url + "/api/3/action/group_show?id=new-datasets&include_datasets=true");
 
-  var ourRequest = new XMLHttpRequest();
-  ourRequest.open('GET', 'https://catalogue.data.wa.gov.au/api/3/action/group_show?id=new-datasets&include_datasets=true', true);
+    latest_datasets_request.onerror = function () {
+      organisations.insertAdjacentHTML("beforeend", "Sorry, we're having trouble reaching the data catalogue at the moment. Please check back later.");
+    }
 
-  ourRequest.onerror = function() {
-	org.insertAdjacentHTML('beforeend', "Sorry, we're having trouble reaching the data catalogue at the moment. Please check back later.");
-  }
+    latest_datasets_request.onload = function () {
+      var response = JSON.parse(latest_datasets_request.responseText);
 
-  ourRequest.onload = function () {
-    var ourData = JSON.parse(ourRequest.responseText);
-    var arr = [];
+      if (response.result.package_count == 0) {
+        organisations.insertAdjacentHTML("beforeend", "There aren't any new datasets at the moment.");
 
-    if (ourData.result.package_count == 0) {
-	  org.insertAdjacentHTML('beforeend', "There aren't any new datasets at the moment.");
-    }else{
-	  for (var i = 0; i < ourData.result.package_count; i++) {
-		arr.push(ourData.result.packages[i].organization.title);
-	  }
-	}
+      } else {
+        var organisation_titles = [];
+        var organisation_names = [];
+        for (var i = 0; i < response.result.package_count; i++) {
+          if (organisation_titles.indexOf(response.result.packages[i].organization.title) == -1) {
+            organisation_titles.push(response.result.packages[i].organization.title);
+            organisation_names.push(response.result.packages[i].organization.name);
+          }
+        }
 
-    //remove duplicates from array
-    let x = (arr) => arr.filter((v, i) => arr.indexOf(v) === i)
-    var unique = x(arr);
+        for (var i = 0; i < organisation_titles.length; i++) {
+          var org_title = organisation_titles[i];
+          organisations.insertAdjacentHTML("beforeend", "<h2><a href=\"" + ckan_base_url + "/organization/" + organisation_names[i] + "\">" + org_title + "</a></h2><ul id=\"" + org_title + "\"></ul>");
+          var organisation_datasets_list = document.getElementById(organisation_titles[i]);
 
-    for (var i = 0; i < unique.length; i++) {
-      var org_title = unique[i];
-      org.insertAdjacentHTML('beforeend', "<h2>" + org_title + "</h2><ul id='" + org_title + "'></ul>");
-      var packages = document.getElementById(unique[i]);
-      var counter = 0;
-      var org_packages = ourData.result.packages.filter((v, i) => org_title == v.organization.title);
-      var ckan_link = "https://catalogue.data.wa.gov.au/dataset/";
-      
-      for (var j = 0; j < org_packages.length; j++) {
-        counter++;
-        packages.insertAdjacentHTML('beforeend', "<li><a href=" + ckan_link + org_packages[j].name +">"+ org_packages[j].title +"</a></li>");
-        if (counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
-          var dataset_remaining = org_packages.length - max_datasets_per_org;
-          var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
-          packages.insertAdjacentHTML('beforeend', "<li> and " + (dataset_remaining) + " more " + dataset_term + ". </li>");
-          break;
+          var org_packages = response.result.packages.filter(function (package) {
+            return package.organization.title == org_title;
+          });
+
+          var org_dataset_counter = 0;
+          for (var k = 0; k < org_packages.length; k++) {
+            org_dataset_counter++;
+
+            organisation_datasets_list.insertAdjacentHTML("beforeend", "<li><a href=\"" + ckan_base_url + "/dataset/" + org_packages[k].name + "\">" + org_packages[k].title + "</a></li>");
+
+            // Displays first few datasets, if there are more display "and more..." message
+            if (org_dataset_counter == max_datasets_per_org && org_packages.length > max_datasets_per_org) {
+              var dataset_remaining = org_packages.length - max_datasets_per_org;
+              var dataset_term = (dataset_remaining == 1) ? "dataset" : "datasets";
+              organisation_datasets_list.insertAdjacentHTML("beforeend", "<li>and " + (dataset_remaining) + " more " + dataset_term + "</li>");
+              break;
+            }
+          }
         }
       }
     }
+
+    latest_datasets_request.send();
   };
 
-  ourRequest.send();
-
+  populateLatestDatasets();
 </script>
-
-</html>
