@@ -56,7 +56,12 @@
 
     latest_datasets_request.onload = function () {
       var response = JSON.parse(latest_datasets_request.responseText);
-
+      
+      response.result.packages.sort(function(a, b) {
+            var keyA = new Date(a.metadata_created), keyB = new Date(b.metadata_created);
+            return keyB - keyA;
+        });
+      
       if (response.result.package_count == 0) {
         organisations.insertAdjacentHTML("beforeend", "There aren't any new datasets at the moment.");
 
